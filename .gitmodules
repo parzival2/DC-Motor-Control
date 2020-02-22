@@ -1,3 +1,6 @@
 [submodule "Chibios_18.2.x"]
 	path = Chibios_18.2.x
 	url = ../ChibiOS.git
+[submodule "ChibiOS-Contrib"]
+	path = ChibiOS-Contrib
+	url = ../../ChibiOS/ChibiOS-Contrib.git

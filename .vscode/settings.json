@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.sdf": "xml",
+        "hal.h": "c"
+    }
+}
