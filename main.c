@@ -16,7 +16,42 @@
 #include "usbcfg.h"
 #include "chprintf.h"
 
+static QEIConfig qeicfg = {
+    QEI_MODE_QUADRATURE,
+    QEI_BOTH_EDGES,
+    QEI_DIRINV_FALSE,
+    QEI_USE_OVERFLOW_MINMAX,
+    0,
+    2048,
+    NULL,
+    NULL,
+  };
+
+int16_t THRESHOLD = -2000;
+uint16_t qei;
+uint16_t lastQei = 0;
+bool direction;
+
 BaseSequentialStream *chp = (BaseSequentialStream *)(&SDU1);
+
+void notifyCallbackPin6(void *arg)
+{
+  (void)arg;
+  chSysLockFromISR();
+  // http://www.creative-robotics.com/quadrature-intro
+  qei = qeiGetCountI(&QEID3);
+  if(palReadPad(GPIOA, 7) == 0)
+  {
+    direction = 1;
+  }
+  else if(palReadPad(GPIOA, 7) == 1)
+  {
+    direction = 0;
+  }
+  palTogglePad(GPIOC, GPIOC_LED);
+  lastQei = qei;
+  chSysUnlockFromISR();
+}
 
 /*
  * Application entry point.
@@ -51,25 +86,23 @@ int main(void) {
   // Set the alternate function for PA6, as it uses TIM3_CH1
   palSetPadMode(GPIOA, 6, PAL_MODE_INPUT_PULLUP);
   palSetPadMode(GPIOA, 7, PAL_MODE_INPUT_PULLUP);
-
-  static QEIConfig qeicfg = {
-    QEI_MODE_QUADRATURE,
-    QEI_BOTH_EDGES,
-    QEI_DIRINV_FALSE,
-  };
+  palEnableLineEvent(PAL_LINE(GPIOA, 6U), PAL_EVENT_MODE_RISING_EDGE);
+  palEnableLineEvent(PAL_LINE(GPIOA, 7U), PAL_EVENT_MODE_BOTH_EDGES);
+  palSetPadCallback(GPIOA, 6, notifyCallbackPin6, NULL);
 
   AFIO->MAPR |= AFIO_MAPR_TIM3_REMAP_NOREMAP;
   qeiStart(&QEID3, &qeicfg);
   qeiEnable(&QEID3);
-
-  uint16_t qei;
+  qeiSetCount(&QEID3, 0);
   while (1) {
-     qei = qeiGetCount(&QEID3);
-     chprintf(chp, "QEI Count : %d\n", qei);
-     if (qei & 1)
-       palSetPad(GPIOC, GPIOC_LED);
-     else
-       palClearPad(GPIOC, GPIOC_LED);
+     // qei = qeiGetCount(&QEID3);
+     // chprintf(chp, "QEI Count : %d\n", qei);
+     // if (qei & 1)
+     //   palSetPad(GPIOC, GPIOC_LED);
+     // else
+     //   palClearPad(GPIOC, GPIOC_LED);
+     chprintf(chp, "Count : %d \nDirection : %d\n", qei, direction);
+     chThdSleepMilliseconds(10);
      
   }
 }
