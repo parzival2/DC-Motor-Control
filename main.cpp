@@ -11,12 +11,32 @@
     limitations under the License.
 */
 
-#include "ch.h"
+#include "ch.hpp"
 #include "hal.h"
 #include "usbcfg.h"
 #include "chprintf.h"
+#include "QuadEncoder.hpp"
+
+static QEIConfig qeicfg = {
+    QEI_MODE_QUADRATURE,
+    QEI_BOTH_EDGES,
+    QEI_DIRINV_FALSE,
+    QEI_OVERFLOW_WRAP,
+    0,
+    8192,
+    NULL,
+    NULL,
+  };
+
+QuadEncoder quadEncoder(&QEID3, &qeicfg);
 
 BaseSequentialStream *chp = (BaseSequentialStream *)(&SDU1);
+
+void handleInterrupt(void *arg)
+{
+    (void)arg;
+    quadEncoder.handlePinAInterrupt();
+}
 
 /*
  * Application entry point.
@@ -31,7 +51,7 @@ int main(void) {
    *   RTOS is active.
    */
   halInit();
-  chSysInit();
+  chibios_rt::System::init();
 
   // Initialize Serial-USB driver
   sduObjectInit(&SDU1);
@@ -47,29 +67,37 @@ int main(void) {
   usbStart(serusbcfg.usbp, &usbcfg);
   usbConnectBus(serusbcfg.usbp);
 
+  quadEncoder.init();
+  // Initialize Quadrature Encoder
+  quadEncoder.setGpioAParams(GPIOA, 6);
+  quadEncoder.setGpioBParams(GPIOB, 7);
 
   // Set the alternate function for PA6, as it uses TIM3_CH1
   palSetPadMode(GPIOA, 6, PAL_MODE_INPUT_PULLUP);
   palSetPadMode(GPIOA, 7, PAL_MODE_INPUT_PULLUP);
-
-  static QEIConfig qeicfg = {
-    QEI_MODE_QUADRATURE,
-    QEI_BOTH_EDGES,
-    QEI_DIRINV_FALSE,
-  };
+  palEnableLineEvent(PAL_LINE(GPIOA, 6U), PAL_EVENT_MODE_RISING_EDGE);
+  palEnableLineEvent(PAL_LINE(GPIOA, 7U), PAL_EVENT_MODE_BOTH_EDGES);
+  palSetPadCallback(GPIOA, 6, handleInterrupt, NULL);
 
   AFIO->MAPR |= AFIO_MAPR_TIM3_REMAP_NOREMAP;
-  qeiStart(&QEID3, &qeicfg);
-  qeiEnable(&QEID3);
 
   uint16_t qei;
+  QuadEncoder::Direction direction;
+  char* dirString;
   while (1) {
-     qei = qeiGetCount(&QEID3);
-     chprintf(chp, "QEI Count : %d\n", qei);
-     if (qei & 1)
-       palSetPad(GPIOC, GPIOC_LED);
-     else
-       palClearPad(GPIOC, GPIOC_LED);
-     
+     qei = quadEncoder.getPulseCount();
+     direction = quadEncoder.getCurrentDirection();
+     if(direction == QuadEncoder::Direction::FORWARD)
+     {
+         dirString = "Forward";
+     }
+     else if(direction == QuadEncoder::Direction::REVERSE)
+     {
+         dirString = "Reverse";
+     }
+     chprintf(chp, "QEI Count : %d Direction : %s\n", qei, dirString);
+     chprintf(chp, "Angle : %f\n", quadEncoder.getCurrentAngleRad());
+     chprintf(chp, "Angular Velocity : %f\n", quadEncoder.getCurrentVelocity());
+     chThdSleepMilliseconds(500);
   }
 }
