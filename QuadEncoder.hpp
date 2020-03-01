@@ -56,10 +56,6 @@ class QuadEncoder
 		{
 			return mCurrentAngleRad;
 		}
-		const double& getCurrentVelocity()
-		{
-			return mAngularVelocity;
-		}
 	private:
 		/**
 		 * The Quadrature encoder driver that will be used
@@ -83,14 +79,6 @@ class QuadEncoder
 		 */
 		double mCurrentAngleRad;
 		/**
-		 * Last Angle in radians
-		 */
-		double mLastAngleRad;
-		/**
-		 * Angular velocity
-		 */
-		double mAngularVelocity;
-		/**
 		 * GPIO that will be used for A pin
 		 */
 		GPIO_TypeDef *mGpioALine;
@@ -106,8 +94,4 @@ class QuadEncoder
 		 * Pin number of B
 		 */
 		uint8_t mPinBNumber;
-		/**
-		 * Stored last system time in microseconds
-		 */
-		systime_t mLastSystemTime;
 };

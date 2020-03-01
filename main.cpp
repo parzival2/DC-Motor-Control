@@ -16,7 +16,8 @@
 #include "usbcfg.h"
 #include "chprintf.h"
 #include "QuadEncoder.hpp"
-
+// The interrupts will be too much at about 1000 RPM there will be no time 
+// for the processor to do other things.
 static QEIConfig qeicfg = {
     QEI_MODE_QUADRATURE,
     QEI_BOTH_EDGES,
@@ -31,6 +32,8 @@ static QEIConfig qeicfg = {
 QuadEncoder quadEncoder(&QEID3, &qeicfg);
 
 BaseSequentialStream *chp = (BaseSequentialStream *)(&SDU1);
+
+static constexpr double ONE_BY_TWO_PI =  0.15915494309;
 
 void handleInterrupt(void *arg)
 {
@@ -84,6 +87,13 @@ int main(void) {
   uint16_t qei;
   QuadEncoder::Direction direction;
   char* dirString;
+  systime_t timeStamp = chVTGetSystemTime();
+  // Time in microseconds
+  uint64_t lastSystemTime = chTimeI2US(timeStamp);
+  // last angle
+  double lastAngle = 0.;
+  double currentAngle = 0.;
+  double angularVelocity = 0.;
   while (1) {
      qei = quadEncoder.getPulseCount();
      direction = quadEncoder.getCurrentDirection();
@@ -95,9 +105,11 @@ int main(void) {
      {
          dirString = "Reverse";
      }
-     chprintf(chp, "QEI Count : %d Direction : %s\n", qei, dirString);
-     chprintf(chp, "Angle : %f\n", quadEncoder.getCurrentAngleRad());
-     chprintf(chp, "Angular Velocity : %f\n", quadEncoder.getCurrentVelocity());
-     chThdSleepMilliseconds(500);
+     // Calculate angular velocity
+     currentAngle = quadEncoder.getCurrentAngleRad();
+     angularVelocity = (ONE_BY_TWO_PI * (currentAngle - lastAngle)) / 2.0;
+     chprintf(chp, "Angular Velocity : %f\n", angularVelocity);
+     lastAngle = currentAngle;
+     chThdSleepMilliseconds(2000);
   }
 }

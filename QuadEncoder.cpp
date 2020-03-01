@@ -13,17 +13,11 @@ QuadEncoder::QuadEncoder(QEIDriver *qeiDriver, QEIConfig *qeiConfig)
     , mCurrentPulseCount(0)
     , mCurrentDirection(Direction::FORWARD)
     , mCurrentAngleRad(0.)
-    , mLastAngleRad(0.)
-    , mAngularVelocity(0.)
     , mGpioALine(GPIOA)
     , mGpioBLine(GPIOA)
     , mPinANumber(7)
     , mPinBNumber(8)
-    , mLastSystemTime(0)
 {
-    // Set the initial system time
-    systime_t timeStamp = chVTGetSystemTime();
-    mLastSystemTime = chTimeI2US(timeStamp);
 }
 
 /**
@@ -56,12 +50,5 @@ void QuadEncoder::handlePinAInterrupt()
         mCurrentDirection = Direction::REVERSE;
         mCurrentAngleRad -= 4 * (6.28319 / mQeiConfig->max);
     }
-    // Get system time
-    systime_t timeStamp = chVTGetSystemTimeX();
-    uint64_t currentSysTimeUs = chTimeI2US(timeStamp);
-    mAngularVelocity = (mCurrentAngleRad - mLastAngleRad) / (currentSysTimeUs - mLastSystemTime);
-    mAngularVelocity *= 1E6;
-    mLastSystemTime = currentSysTimeUs;
-    mLastAngleRad = mCurrentAngleRad;
     chibios_rt::System::unlockFromIsr();
 }
