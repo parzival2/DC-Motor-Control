@@ -16,6 +16,26 @@
 #include "usbcfg.h"
 #include "chprintf.h"
 #include "QuadEncoder.hpp"
+/**
+ * PWM Config
+ */
+// We will be using PB6 for TIM4_CH1
+static PWMConfig pwmCFG =
+    {
+        100000,               /* 10kHz PWM clock frequency */
+        10,                   /* PWM period = ticks / PWM clock frequency =1second*/
+        // Frequency = 150000/10;
+        NULL,                 /* No callback */
+        {
+            {PWM_OUTPUT_ACTIVE_HIGH, NULL},
+            {PWM_OUTPUT_DISABLED, NULL},
+            {PWM_OUTPUT_DISABLED, NULL},
+            {PWM_OUTPUT_DISABLED, NULL}
+        },
+        0,
+        0
+};
+
 // The interrupts will be too much at about 1000 RPM there will be no time 
 // for the processor to do other things.
 static QEIConfig qeicfg = {
@@ -40,6 +60,21 @@ void handleInterrupt(void *arg)
     (void)arg;
     quadEncoder.handlePinAInterrupt();
 }
+
+/* Thread definition */
+static THD_WORKING_AREA(changeDirection, 128);
+static THD_FUNCTION(dirThread, arg){
+	(void)arg;
+	/* Set thread name */
+	chRegSetThreadName("dirThread");
+	/* Thread should not return, so begin a while loop */
+	while(TRUE)
+	{
+        palTogglePad(GPIOA, 5);
+		chThdSleepMilliseconds(250);
+	}
+}
+
 
 /*
  * Application entry point.
@@ -82,6 +117,17 @@ int main(void) {
   palEnableLineEvent(PAL_LINE(GPIOA, 7U), PAL_EVENT_MODE_BOTH_EDGES);
   palSetPadCallback(GPIOA, 6, handleInterrupt, NULL);
 
+  // Set alternate function for PB6 and PB7 for PWM outputs
+  palSetPadMode(GPIOB, 6, PAL_MODE_STM32_ALTERNATE_OPENDRAIN);
+  pwmStart(&PWMD4, &pwmCFG);
+
+  // Set mode for dir pin
+  palSetPadMode(GPIOA, 5, PAL_MODE_OUTPUT_PUSHPULL);
+  /*
+   * Enable channel 0 with 50% duty cycle
+   */
+  pwmEnableChannel(&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 2000));
+
   AFIO->MAPR |= AFIO_MAPR_TIM3_REMAP_NOREMAP;
 
   uint16_t qei;
@@ -90,10 +136,14 @@ int main(void) {
   systime_t timeStamp = chVTGetSystemTime();
   // Time in microseconds
   uint64_t lastSystemTime = chTimeI2US(timeStamp);
+  chThdCreateStatic(changeDirection, sizeof(changeDirection),
+                    NORMALPRIO+1, dirThread, NULL);
+
   // last angle
   double lastAngle = 0.;
   double currentAngle = 0.;
   double angularVelocity = 0.;
+  double time = 0.;
   while (1) {
      qei = quadEncoder.getPulseCount();
      direction = quadEncoder.getCurrentDirection();
@@ -107,9 +157,10 @@ int main(void) {
      }
      // Calculate angular velocity
      currentAngle = quadEncoder.getCurrentAngleRad();
-     angularVelocity = (ONE_BY_TWO_PI * (currentAngle - lastAngle)) / 2.0;
-     chprintf(chp, "Angular Velocity : %f\n", angularVelocity);
+     angularVelocity = (ONE_BY_TWO_PI * (currentAngle - lastAngle)) / 0.5;
+     chprintf(chp, "%f, %f\n", time, quadEncoder.getCurrentAngleRad());
+     time += 0.005;
      lastAngle = currentAngle;
-     chThdSleepMilliseconds(2000);
+     chThdSleepMilliseconds(5);
   }
 }
