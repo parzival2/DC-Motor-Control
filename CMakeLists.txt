@@ -27,7 +27,9 @@ set(HEADERS
     usbcfg.h
     halconf_community.h
     mcuconf_community.h
-    QuadEncoder.hpp)
+    QuadEncoder.hpp
+    PIDController.hpp
+    LowpassFilter.hpp)
 
 set(SOURCES
     ${CHIBIOS_CONTRIB_HAL_SRC}
