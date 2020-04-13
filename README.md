@@ -1,4 +1,4 @@
-# DC_Motor_Control
+# DC Motor Control(PID)
 Control of DC motor using the encoder and STM32F103 using Chibios
 
 ## Setting up
