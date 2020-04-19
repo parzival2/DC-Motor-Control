@@ -6,11 +6,12 @@
  * Implemented based on https://en.wikipedia.org/wiki/PID_controller and the
  * pseudocode can be found in the same article.
  */
+template<class FType>
 class PIDController
 {
   public:
     // Constructor
-    PIDController(double kp, double ki, double kd)
+    PIDController(FType kp, FType ki, FType kd)
         : mKp(kp)
         , mKi(ki)
         , mKd(kd)
@@ -42,17 +43,17 @@ class PIDController
      * @param deltaT The time difference between the two calls.
      * @return output that has been calculated.
      */
-    double calculateOutput(double input, double deltaT)
+    FType calculateOutput(FType input, FType deltaT)
     {
         // Calculate the error
-        double error = mReference - input;
+        FType error = mReference - input;
         // Proportional term
-        double propTerm = mKp * error;
+        FType propTerm = mKp * error;
         // Integral term
         mIntegral += (error * deltaT);
         // Derivative term
-        double dError = (error - mPreviousError) / deltaT;
-        double derivative = mKd * dError;
+        FType dError = (error - mPreviousError) / deltaT;
+        FType derivative = mKd * dError;
         mPreviousError = error;
         return (propTerm + mIntegral * mKi + derivative);
     }
@@ -62,7 +63,7 @@ class PIDController
      * @brief setProportionalValue Sets the proportional value to the value given
      * @param kp The mKp value
      */
-    void setProportionalValue(double kp)
+    void setProportionalValue(FType kp)
     {
         mKp = kp;
     }
@@ -70,7 +71,7 @@ class PIDController
      * @brief setIntegralValue Sets the integral value to the value given
      * @param ki The mKi value
      */
-    void setIntegralValue(double ki)
+    void setIntegralValue(FType ki)
     {
         mKi = ki;
     }
@@ -78,7 +79,7 @@ class PIDController
      * @brief setDerivativeValue Sets the derivative value to the given value
      * @param kd The mKd value
      */
-    void setDerivativeValue(double kd)
+    void setDerivativeValue(FType kd)
     {
         mKd = kd;
     }
@@ -86,7 +87,7 @@ class PIDController
      * @brief setReference Set the reference that will be tracked.
      * @param reference Reference value
      */
-    void setReference(double reference)
+    void setReference(FType reference)
     {
         mReference = reference;
     }
@@ -95,7 +96,7 @@ class PIDController
      * @brief getProportionalValue Returns the internal proportional value
      * @return Returns the value of mKp
      */
-    double getProportionalValue() const
+    FType getProportionalValue() const
     {
         return mKp;
     }
@@ -103,7 +104,7 @@ class PIDController
      * @brief getIntegralValue Returns the internal integral value
      * @return Returns the value of mKi
      */
-    double getIntegralValue() const
+    FType getIntegralValue() const
     {
         return mKi;
     }
@@ -111,7 +112,7 @@ class PIDController
      * @brief getDerivativeValue Returns the derivative value
      * @return Returns the value of mKd
      */
-    double getDerivativeValue() const
+    FType getDerivativeValue() const
     {
         return mKd;
     }
@@ -119,7 +120,7 @@ class PIDController
      * @brief getReferenceValue Returns the value of reference that this controller is tracking.
      * @return Returns the mReference value.
      */
-    double getReferenceValue() const
+    FType getReferenceValue() const
     {
         return mReference;
     }
@@ -128,32 +129,32 @@ class PIDController
     /**
      * @brief Kp Proportional value in PID controller
      */
-    double mKp;
+    FType mKp;
 
     /**
      * @brief Ki Integral value in PID controller
      */
-    double mKi;
+    FType mKi;
 
     /**
      * @brief Kd Derivative value in PID controller
      */
-    double mKd;
+    FType mKd;
 
     /**
      * @brief mReference The reference to be tracked.
      */
-    double mReference;
+    FType mReference;
 
     /**
      * @brief mIntegral The integral
      */
-    double mIntegral;
+    FType mIntegral;
 
     /**
      * @brief mPreviousError The previous error that will be used for derivative term.
      */
-    double mPreviousError;
+    FType mPreviousError;
 };
 
 #endif // PIDCONTROLLER_HPP
