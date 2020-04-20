@@ -27,16 +27,23 @@ set(HEADERS
     usbcfg.h
     halconf_community.h
     mcuconf_community.h
-    QuadEncoder.hpp
+    QuadEncoder.h
     PIDController.hpp
-    LowpassFilter.hpp)
+    LowpassFilter.hpp
+    MotorController.h
+    # roslib
+    ros.h
+    ChibiOSHardware.h)
 
 set(SOURCES
     ${CHIBIOS_CONTRIB_HAL_SRC}
     ${CHIBIOS_CONTRIB_PLATFORM_SRC}
-    QuadEncoder.cpp
     usbcfg.c
-    main.cpp)
+    main.cpp
+    README.md
+    # Ros
+    ros_lib/time.cpp
+    ros_lib/duration.cpp)
 
 include_directories(${CHIBIOS_CONTRIB_HAL_INCLUDE_DIR})
 include_directories(${CHIBIOS_CONTRIB_PLATFORM_INCLUDE_DIR})
